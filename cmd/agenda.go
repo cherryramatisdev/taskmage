@@ -14,6 +14,7 @@ import (
 )
 
 const INITIAL_HOUR int = 8
+const FINAL_HOUR int = 23
 
 // Week-agenda (W07):
 // Monday     10 February 2025 W07
@@ -45,15 +46,7 @@ func (v *View) MountAgendaView(tasks []*taskwarrior.Task, target time.Time) stri
 
 	line := tui.DrawLine(v.Width / 2)
 
-	var finalHour int
-
-	if target.Hour() <= INITIAL_HOUR {
-		finalHour = 24
-	} else {
-		finalHour = target.Hour()
-	}
-
-	for i := INITIAL_HOUR; i <= finalHour; i++ {
+	for i := INITIAL_HOUR; i <= FINAL_HOUR; i++ {
 		var hour int
 
 		if i > 23 {
@@ -66,14 +59,16 @@ func (v *View) MountAgendaView(tasks []*taskwarrior.Task, target time.Time) stri
 
 		output.WriteString(fmt.Sprintf("%02d:00 %s\n", i, line))
 
+		if target.Hour() == i {
+			output.WriteString(color.CyanString(fmt.Sprintf("%02d:%02d %s ← now\n", target.Hour(), target.Minute(), line)))
+		}
+
 		if filteredTasks != nil {
 			for _, task := range filteredTasks {
 				output.WriteString(color.GreenString(fmt.Sprintf("%02d:%02d %s\n", task.Due.Hour(), task.Due.Minute(), task.Description)))
 			}
 		}
 	}
-
-	output.WriteString(fmt.Sprintf("%02d:%02d %s ← now\n", target.Hour(), target.Minute(), line))
 
 	return output.String()
 }
