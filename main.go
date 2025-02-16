@@ -27,7 +27,7 @@ func main() {
 		panic(err)
 	}
 
-	rootCmd.AddCommand(cmd.RegisterAgendaCmd(&cmd.View{Width: width, DB: db}))
+	rootCmd.AddCommand(cmd.RegisterAgendaCmd(&cmd.View{Width: width, DB: db}), cmd.RegisterAddTaskCmd(db))
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
