@@ -14,7 +14,7 @@ import (
 )
 
 const INITIAL_HOUR int = 8
-const FINAL_HOUR int = 23
+const FINAL_HOUR int = 24
 
 // Week-agenda (W07):
 // Monday     10 February 2025 W07
