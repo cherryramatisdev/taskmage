@@ -1,13 +1,16 @@
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/cherryramatisdev/taskmage/taskwarrior"
 	"github.com/cherryramatisdev/taskmage/tui"
 	"github.com/fatih/color"
+	"github.com/spf13/cobra"
 )
 
 const INITIAL_HOUR int = 8
@@ -33,12 +36,12 @@ const INITIAL_HOUR int = 8
 // Sunday     16 February 2025
 
 type View struct {
-  Width int
+	Width int
+	DB    *sql.DB
 }
 
 func (v *View) MountAgendaView(tasks []*taskwarrior.Task, target time.Time) string {
 	var output strings.Builder
-
 
 	line := tui.DrawLine(v.Width / 2)
 
@@ -51,13 +54,13 @@ func (v *View) MountAgendaView(tasks []*taskwarrior.Task, target time.Time) stri
 	}
 
 	for i := INITIAL_HOUR; i <= finalHour; i++ {
-  	var hour int
+		var hour int
 
-  	if i > 23 {
-    	hour = 0
-  	} else {
-    	hour = i
-  	}
+		if i > 23 {
+			hour = 0
+		} else {
+			hour = i
+		}
 
 		filteredTasks := taskwarrior.FindTaskByDueDate(tasks, time.Date(target.Year(), target.Month(), target.Day(), hour, 0, 0, 0, time.UTC))
 
@@ -73,4 +76,64 @@ func (v *View) MountAgendaView(tasks []*taskwarrior.Task, target time.Time) stri
 	output.WriteString(fmt.Sprintf("%02d:%02d %s ← now\n", target.Hour(), target.Minute(), line))
 
 	return output.String()
+}
+
+func getDateByWeekday(now time.Time, weekday time.Weekday) time.Time {
+	daysUntilTarget := (int(now.Weekday()) - int(weekday) + 7) % 7
+	return now.AddDate(0, 0, -daysUntilTarget)
+}
+
+func fromStringToWeekday(day string) time.Weekday {
+	switch day {
+	case "monday":
+		return time.Monday
+	case "tuesday":
+		return time.Tuesday
+	case "wednesday":
+		return time.Wednesday
+	case "thursday":
+		return time.Thursday
+	case "friday":
+		return time.Friday
+	case "saturday":
+		return time.Saturday
+	case "sunday":
+		return time.Sunday
+	default:
+		return time.Monday
+	}
+}
+
+func fromHumanDayIdentifierToTimeTarget(day string) time.Time {
+	now := time.Now()
+	if day == "today" {
+		return now
+	}
+
+	if day == "tomorrow" {
+		return now.Add(time.Hour * 24)
+	}
+
+	return getDateByWeekday(now, fromStringToWeekday(day))
+}
+
+func RegisterAgendaCmd(view *View) *cobra.Command {
+	return &cobra.Command{
+		Use:   "agenda [<today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday>]",
+		Short: "Output a daily resume for the tasks, without any flag will display agenda for current day",
+		Args:  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
+		Run: func(cmd *cobra.Command, args []string) {
+			tasks, err := taskwarrior.GetTasksByStatus(view.DB, taskwarrior.Pending)
+
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+
+			target := fromHumanDayIdentifierToTimeTarget(args[0])
+
+			fmt.Printf("%s %d %s %d\n", target.Weekday().String(), target.Day(), target.Month().String(), target.Year())
+			fmt.Print(view.MountAgendaView(tasks, target))
+		},
+	}
 }

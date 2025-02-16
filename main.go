@@ -3,12 +3,17 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/cherryramatisdev/taskmage/cmd"
 	"github.com/cherryramatisdev/taskmage/taskwarrior"
+	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )
+
+var rootCmd = &cobra.Command{
+	Use:   "taskmage",
+	Short: "taskmage is a suite around taskwarrior to help you better manage your tasks",
+}
 
 func main() {
 	db, err := taskwarrior.Connect()
@@ -17,43 +22,49 @@ func main() {
 	}
 	defer db.Close()
 
-	tasks, err := taskwarrior.GetTasksByStatus(db, taskwarrior.Pending)
-
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
 	if err != nil {
 		panic(err)
 	}
 
-	{
-		target := time.Now()
+	rootCmd.AddCommand(cmd.RegisterAgendaCmd(&cmd.View{Width: width, DB: db}))
 
-		width, _, err := term.GetSize(int(os.Stdout.Fd()))
-		if err != nil {
-			panic(err)
-		}
-
-		view := cmd.View{
-			Width: width,
-		}
-
-		fmt.Printf("%s %d %s %d\n", target.Weekday().String(), target.Day(), target.Month().String(), target.Year())
-		fmt.Print(view.MountAgendaView(tasks, target))
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
-	fmt.Println() 
+	// 	tasks, err := taskwarrior.GetTasksByStatus(db, taskwarrior.Pending)
 
-	{
-		target := time.Now().Add(time.Hour * 24) 
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
 
-		width, _, err := term.GetSize(int(os.Stdout.Fd()))
-		if err != nil {
-			panic(err)
-		}
+	// 	{
+	// 		target := time.Now()
 
-		view := cmd.View{
-			Width: width,
-		}
+	// 		view := cmd.View{
+	// 			Width: width,
+	// 		}
 
-		fmt.Printf("%s %d %s %d\n", target.Weekday().String(), target.Day(), target.Month().String(), target.Year())
-		fmt.Print(view.MountAgendaView(tasks, target))
-	}
+	// 		fmt.Printf("%s %d %s %d\n", target.Weekday().String(), target.Day(), target.Month().String(), target.Year())
+	// 		fmt.Print(view.MountAgendaView(tasks, target))
+	// 	}
+
+	// 	fmt.Println()
+
+	// 	{
+	// 		target := time.Now().Add(time.Hour * 24)
+
+	// 		width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	// 		if err != nil {
+	// 			panic(err)
+	// 		}
+
+	// 		view := cmd.View{
+	// 			Width: width,
+	// 		}
+
+	//		fmt.Print(view.MountAgendaView(tasks, target))
+	//	}
 }
