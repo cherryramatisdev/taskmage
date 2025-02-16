@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/cherryramatisdev/taskmage/utils"
 	_ "github.com/ncruces/go-sqlite3/driver"
 	_ "github.com/ncruces/go-sqlite3/embed"
 )
@@ -46,6 +48,7 @@ type taskFromDb struct {
 	End         string `json:"end"`
 }
 
+// TODO: how can i speed up this?
 func Connect() (*sql.DB, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -111,4 +114,23 @@ func GetTasksByStatus(db *sql.DB, status Status) ([]*Task, error) {
 	}
 
 	return tasks, nil
+}
+
+func GetTags(db *sql.DB) ([]string, error) {
+	rows, err := db.Query("select tags from ( select json_extract(data, '$.tags') as tags from tasks ) as extracted_tags where tags is not null and tags != '';")
+
+	if err != nil {
+		return nil, err
+	}
+
+	var output [][]string
+
+	for rows.Next() {
+		var tags string
+		rows.Scan(&tags)
+
+		output = append(output, strings.Split(tags, ","))
+	}
+
+	return utils.RemoveDuplicates(utils.Flatten(output)), nil
 }
