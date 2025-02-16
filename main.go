@@ -33,38 +33,4 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	// 	tasks, err := taskwarrior.GetTasksByStatus(db, taskwarrior.Pending)
-
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	{
-	// 		target := time.Now()
-
-	// 		view := cmd.View{
-	// 			Width: width,
-	// 		}
-
-	// 		fmt.Printf("%s %d %s %d\n", target.Weekday().String(), target.Day(), target.Month().String(), target.Year())
-	// 		fmt.Print(view.MountAgendaView(tasks, target))
-	// 	}
-
-	// 	fmt.Println()
-
-	// 	{
-	// 		target := time.Now().Add(time.Hour * 24)
-
-	// 		width, _, err := term.GetSize(int(os.Stdout.Fd()))
-	// 		if err != nil {
-	// 			panic(err)
-	// 		}
-
-	// 		view := cmd.View{
-	// 			Width: width,
-	// 		}
-
-	//		fmt.Print(view.MountAgendaView(tasks, target))
-	//	}
 }
